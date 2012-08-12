@@ -1,0 +1,168 @@
+/*********************************************************************************
+ *   	Pseudo-Code: Algorithm Code Samples and Implementation Discussion        *
+ *		=================================================================*		 *
+ *********************************************************************************/
+
+//These are the bit masks which were used in order to deal with the bits within each byte of colour
+//For blue and red we will be replacing the 3 least significant bits, while for green, we'll be replacing the 2 
+//least significant bits. This allows us to store 1 byte of data per pixel (each pixel is 3 bytes large).  The 
+//valueMasks can be thought of as placeholders – they indicate where in the byte we will be storing the 
+//data/message. 
+
+private const byte BlueMask = 248; // 11111000
+private const byte GreenMask = 252; // 11111100
+private const byte RedMask = 248; //  11111000
+       
+private const byte BValueMask = 224; // 11100000
+private const byte GValueMask = 24; // 00011000
+private const byte RValueMask = 7; //  00000111
+
+public byte changeEachBit(byte byteToManipulate, int colour, byte theMessage)
+{
+
+//This method will be passed the byte which we are going to manipulate(Red byte, Green byte,        
+//or Blue byte), the colour as an int (for indicating which colour we are dealing with) as well as 
+//the byte message which we will be distributing throughout the Red byte, Green byte, and Blue 
+//byte.
+
+       byte value = 0;
+       byte returnByte = 0; 
+
+       if (colour == BLUE)
+       {
+	   
+//ANDing the message with the appropriate mask will zero out the bits which 
+//are unimportant to us, indicating the bits which we want to distribute in a 
+//specific byte (either red byte, green byte, or blue byte – in this case the 
+//blue byte).
+
+           value= (byte)(theMessage & BValueMask);
+
+//Once we have the bits in the image, we need extract those specific bits. In 
+//this case, we want to shift left in order to get the 3 least significant 
+//bits in the message to distribute in the blue byte. 
+
+           value = (byte)(value>>5); 
+
+
+//Now, we can take the byte which we are going to manipulate (red, green or blue byte) and 
+//AND it with the appropriate mask – this will isolate or zeroed out the area for us so we 
+//are able to place the bits from the message, which we extracted earlier, into the zeroed 
+//out area.
+
+    returnByte = (byte)(byteToManipulate & BlueMask);
+
+//we now OR the byte (which has the least 3 significant digits zeroed out
+//with the value which holds the 3 bits of the message we want to replace the
+//Zeros out bits with. This process will be repeated for all three bytes of        
+//colour. Red will not require bit shifting as it is FIRST in order (RED,GREEN, BLUE). 
+//Green will only require 2 bits to be zeroed out and replaced with the message – rather 
+//than 3 – which is the case for both blue and red bytes. 
+
+           returnByte = (byte)(returnByte | value); 
+                
+        }
+        else if (colour == GREEN)
+        {
+            value = (byte)(theMessage & GValueMask);
+            value = (byte)(value >> 3);
+            returnByte = (byte)(byteToManipulate & GreenMask);
+            returnByte = (byte)(returnByte | value);
+
+        }
+        else if (colour == RED)
+        {
+             value = (byte)(theMessage & RValueMask);
+             returnByte = (byte)(byteToManipulate & RedMask);
+             returnByte = (byte)(returnByte | value);
+         }
+
+         return returnByte;
+        }
+}
+
+
+
+private const byte InverseBlueMask = 7; // 00000111
+private const byte InverseGreenMask = 3; // 00000011
+private const byte InverseRedMask = 7; //  00000111
+
+
+  public void getEachBitOfMessage(byte byteToManipulate, int colour)
+        {
+
+//This method will take in the byte which we are going to extract the bits of the message 
+//from as well as the colour of the byte – so we know which byte we're dealing with. 
+            byte value = 0;
+
+//If we have read in 3 bytes (making up one pixel of colour, then we will put all the bits 
+//we received from 1 pixel (3 bytes) into a single byte. Once this is done, we will convert 
+//that single byte into a value which can be read and understood.  
+
+            if (countToByte == 3)
+            {
+                byte blueAreaInTotal = 0;
+                byte greenAreaInTotal = 0;
+                byte redAreaInTotal = 0;
+                byte total = 0; 
+				
+//Here, we make all the appropriate shifts in order to extract the bits we placed within 
+//each colour byte. If it is red, no shift is needed as it comes first, if it is green, 
+//we shift 3 bits along (we replaced 3 bits of Red, 2 bits of green, and 3 bits of 
+//blue). If it’s blue, we shift 5 bits in order to get the last three bits. 
+
+                redAreaInTotal = (byte)(redCount);
+                blueAreaInTotal = (byte)(blueCount << 5);
+                greenAreaInTotal = (byte)(greenCount << 3);
+
+//In order to put all bits received from all three colours together into one byte, we 
+//must OR each of the bit values received from each byte colour with an empty byte. This 
+//will yield us a byte which contains one byte of the message (in other words – one 
+//char). 
+
+                total = (byte)(total | redAreaInTotal); 
+                total = (byte)(total | blueAreaInTotal);
+                total = (byte)(total | greenAreaInTotal);
+
+//We store the char into a list. we do this because storing it into a string is very 
+//inefficient and will slow the entire program down as this copy occurs several times. In 
+//C# strings are immutable, meaning the string will be destroyed and re-created each time 
+//it needs to be modified. This is very costly. Using a list helps to alleviate this 
+//cost. Although, there is another way around this :) 
+
+                char val = Convert.ToChar(total);
+                String nextChar = val.ToString();
+                finalMessage.Add(nextChar);
+                
+                redCount = 0;
+                blueCount = 0;
+                greenCount = 0; 
+                countToByte = 0; 
+            }
+
+            if (colour == BLUE)
+            {
+			
+//In each of these if/else portions, we AND the byte we’re extracting the bits of the 
+//message from with the INVERSE of the original mask. This will zero out everything in 
+//the byte except for the bits of the message. we do this for all three bytes of colour. 
+
+                value = (byte)(byteToManipulate & InverseBlueMask);
+                blueCount = value; 
+            }
+            else if (colour == GREEN)
+            {
+                value = (byte)(byteToManipulate & InverseGreenMask);
+                greenCount = value; 
+
+            }
+            else if (colour == RED)
+            {
+                value = (byte)(byteToManipulate & InverseRedMask);
+                redCount = value; 
+            }
+
+            countToByte++; 
+        }
+
+
