@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>A.little.code.embedimage by tkurian</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>A.little.code.embedimage</h1>
+        <h2></h2>
+        <a href="https://github.com/tkurian/A.Little.Code.EmbedImage" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>EMBED IMAGE</h1>
+
+<p>There are several approaches that could be taken in order to encode a message into an image. Here, we will be looking at a very clean approach which doesn't add additional bits onto the image - ie. the image size remains exactly the same. This means, it's very difficult for other applications to notice that the image has actually be tampered with. Here is the logic behind the Encode Message application:</p>
+
+<p>A 24 bit image means that we are dealing with 3 bytes per pixel - 1 Red byte, 1 Green byte, and 1 Blue byte. The lower bits in a pixel are actually mostly considered 'white noise.' This means that manipulating these values will create little to no difference to the common viewer. In fact, most people won't be able to notice any difference at all.</p>
+
+<p>These are the bit masks which were used in order to deal with the bits within each byte of colour For blue and red we will be replacing the 3 least significant bits, while for green, we'll be replacing the 2 least significant bits. This allows us to store 1 byte of data per pixel (each pixel is 3 bytes large). The value masks can be thought of as placeholders – they indicate where in the byte we will be storing the data/message.</p>
+
+<h2>Pseudo-Code: Algorithm Code Samples and Implementation Discussion</h2>
+
+<h3>Private Class Variables - The Masks</h3>
+
+<pre><code>   //11111000
+   private const byte BlueMask = 248;
+
+   //11111100
+   private const byte GreenMask = 252;
+
+   //11111000
+   private const byte RedMask = 248;
+
+   //11100000
+   private const byte BValueMask = 224;
+
+   //00011000
+   private const byte GValueMask = 24;
+
+   //00000111
+   private const byte RValueMask = 7;
+
+  // 00000111
+  private const byte InverseBlueMask = 7; 
+
+  // 00000011
+  private const byte InverseGreenMask = 3;
+
+  // 00000111
+  private const byte InverseRedMask = 7;
+</code></pre>
+
+<h3>Embedding The Message</h3>
+
+<pre><code>public byte changeEachBit(byte byteToManipulate, int colour, byte theMessage)
+{
+</code></pre>
+
+<p>This method will be passed the byte which we are going to manipulate(Red byte, Green byte,
+or Blue byte), the colour as an int (for indicating which colour we are dealing with) as well as the byte message which we will be distributing throughout the Red byte, Green byte, and Blue byte.</p>
+
+<pre><code>  byte value = 0;
+  byte returnByte = 0; 
+
+  if (colour == BLUE)
+  {
+</code></pre>
+
+<p>ANDing the message with the appropriate mask will zero out the bits which are unimportant to us, indicating the bits which we want to distribute in a specific byte (either red byte, green byte, or blue byte – in this case the blue byte).</p>
+
+<pre><code>   value= (byte)(theMessage &amp; BValueMask);
+</code></pre>
+
+<p>Once we have the bits in the image, we need extract those specific bits. In this case, we want to shift left in order to get the 3 least significant bits in the message to distribute in the blue byte.</p>
+
+<pre><code>   value = (byte)(value&gt;&gt;5); 
+</code></pre>
+
+<p>Now, we can take the byte which we are going to manipulate (red, green or blue byte) and AND it with the appropriate mask – this will isolate or zeroed out the area for us so we are able to place the bits from the message, which we extracted earlier, into the zeroed out area.</p>
+
+<pre><code>   returnByte = (byte)(byteToManipulate &amp; BlueMask);
+</code></pre>
+
+<p>we now OR the byte (which has the least 3 significant digits zeroed out with the value which holds the 3 bits of the message we want to replace the Zeros out bits with. This process will be repeated for all three bytes of
+colour. Red will not require bit shifting as it is FIRST in order (RED,GREEN, BLUE). Green will only require 2 bits to be zeroed out and replaced with the message – rather than 3 – which is the case for both blue and red bytes.</p>
+
+<pre><code>   returnByte = (byte)(returnByte | value); 
+
+   }
+   else if (colour == GREEN)
+   {
+       value = (byte)(theMessage &amp; GValueMask);
+       value = (byte)(value &gt;&gt; 3);
+       returnByte = (byte)(byteToManipulate &amp; GreenMask);
+       returnByte = (byte)(returnByte | value);
+
+   }
+   else if (colour == RED)
+   {
+        value = (byte)(theMessage &amp; RValueMask);
+        returnByte = (byte)(byteToManipulate &amp; RedMask);
+        returnByte = (byte)(returnByte | value);
+   }
+
+    return returnByte;
+  }
+}
+</code></pre>
+
+<h3>Retrieving The Message</h3>
+
+<pre><code> public void getEachBitOfMessage(byte byteToManipulate, int colour)
+ {
+</code></pre>
+
+<p>This method will take in the byte which we are going to extract the bits of the message from as well as the colour of the byte – so we know which byte we're dealing with. byte value = 0;</p>
+
+<p>If we have read in 3 bytes (making up one pixel of colour, then we will put all the bits we received from 1 pixel (3 bytes) into a single byte. Once this is done, we will convert that single byte into a value which can be read and understood.</p>
+
+<pre><code>    if (countToByte == 3)
+    {
+        byte blueAreaInTotal = 0;
+        byte greenAreaInTotal = 0;
+        byte redAreaInTotal = 0;
+        byte total = 0; 
+</code></pre>
+
+<p>Here, we make all the appropriate shifts in order to extract the bits we placed within each colour byte. If it is red, no shift is needed as it comes first, if it is green, we shift 3 bits along (we replaced 3 bits of Red, 2 bits of green, and 3 bits of blue). If it’s blue, we shift 5 bits in order to get the last three bits.</p>
+
+<pre><code>        redAreaInTotal = (byte)(redCount);
+        blueAreaInTotal = (byte)(blueCount &lt;&lt; 5);
+        greenAreaInTotal = (byte)(greenCount &lt;&lt; 3);
+</code></pre>
+
+<p>In order to put all bits received from all three colours together into one byte, we must OR each of the bit values received from each byte colour with an empty byte. This will yield us a byte which contains one byte of the message (in other words – one char).</p>
+
+<pre><code>        total = (byte)(total | redAreaInTotal); 
+        total = (byte)(total | blueAreaInTotal);
+        total = (byte)(total | greenAreaInTotal);
+</code></pre>
+
+<p>We store the char into a list. we do this because storing it into a string is very inefficient and will slow the entire program down as this copy occurs several times. In C# strings are immutable, meaning the string will be destroyed and re-created each time it needs to be modified. This is very costly. Using a list helps to alleviate this cost. Although, there is another way around this :)</p>
+
+<pre><code>        char val = Convert.ToChar(total);
+        String nextChar = val.ToString();
+        finalMessage.Add(nextChar);
+
+        redCount = 0;
+        blueCount = 0;
+        greenCount = 0; 
+        countToByte = 0; 
+    }
+
+    if (colour == BLUE)
+    {
+</code></pre>
+
+<p>In each of these if/else portions, we AND the byte we’re extracting the bits of the message from with the INVERSE of the original mask. This will zero out everything in the byte except for the bits of the message. we do this for all three bytes of colour.</p>
+
+<pre><code>        value = (byte)(byteToManipulate &amp; InverseBlueMask);
+        blueCount = value; 
+    }
+    else if (colour == GREEN)
+    {
+        value = (byte)(byteToManipulate &amp; InverseGreenMask);
+        greenCount = value; 
+
+    }
+    else if (colour == RED)
+    {
+        value = (byte)(byteToManipulate &amp; InverseRedMask);
+        redCount = value; 
+    }
+
+    countToByte++; 
+}
+</code></pre>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/tkurian/A.Little.Code.EmbedImage/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/tkurian/A.Little.Code.EmbedImage/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/tkurian/A.Little.Code.EmbedImage"></a> is maintained by <a href="https://github.com/tkurian">tkurian</a>.</p>
+
+          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
